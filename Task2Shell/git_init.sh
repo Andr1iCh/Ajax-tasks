@@ -10,12 +10,13 @@ source "$CONFIG_PATH"
 confVar_security
 
 check_target_dir "$1"
-case "$?" in
+local targetDir_state=$?
+case "$targetDir_state" in
 1|3)
-	if [[ $? -eq 1 ]];then
+	mkdir -p "$1"
+	if [[ $targetDir_state -eq 1 ]];then
         echo "Directory $1 is created"
         fi
-	mkdir -p "$1"
 
 	clean_name="${1%/}"
 	dir_name="${clean_name##*/}"	
@@ -64,19 +65,23 @@ echo "==================="
 }
 
 ask_confirmation(){
-read -p "Create file?(y/n): " answer
-
+local answer
+while true; do
+read -r -p "Create file? (y/n): " answer
 case "$answer" in
-y|Y|yes|Yes|YES)
-	init_gitConfig
-	;;
-n|N|no|No|NO)
-	exit 0
-	;;
-*)
-	return 3
-	;;
+ y|Y|yes|Yes|YES)
+                init_gitConfig
+                break
+                ;;
+ n|N|no|No|NO)
+                echo "Configuration aborted"
+                exit 0
+                ;;
+            *)
+                echo "Invalid input"
+        ;;
 esac
+done
 }
 
 init_gitConfig(){
@@ -96,19 +101,26 @@ echo "USER_BRANCH=\"$USER_BRANCH\"" >> "$CONFIG_PATH"
 startup_security(){
 
 if [ $# -gt 2 ]; then
-echo "Wrong argument value!"
+echo "Invalid number of arguments!"
 exit 1
+fi
+
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+echo "Error: Current directory is already inside a Git repository!" >&2
+exit 2
+fi
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+show_help
+exit 0
 fi
 
 if [[ ! -f "$CONFIG_PATH" ]]; then
 echo "Config file does not exist!"
 ask_confirmation
-while [ $? -eq 3 ]; do
-ask_confirmation
-done
 fi
 
-if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+if [[ "$#" -eq 0 ]]; then
 show_help
 exit 0
 fi
