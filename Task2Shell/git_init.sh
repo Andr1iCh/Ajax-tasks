@@ -99,6 +99,10 @@ echo "USER_BRANCH=\"$USER_BRANCH\"" >> "$CONFIG_PATH"
 }
 
 startup_security(){
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+show_help
+exit 0
+fi
 
 if [ $# -gt 2 ]; then
 echo "Invalid number of arguments!"
@@ -108,11 +112,6 @@ fi
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 echo "Error: Current directory is already inside a Git repository!" >&2
 exit 2
-fi
-
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-show_help
-exit 0
 fi
 
 if [[ ! -f "$CONFIG_PATH" ]]; then
