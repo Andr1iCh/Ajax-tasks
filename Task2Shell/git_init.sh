@@ -7,8 +7,8 @@ main(){
 
 startup_security "$@"
 source "$CONFIG_PATH"
-
 confVar_security
+
 
 git init -b "$USER_BRANCH"
 git config --local user.name "$USER_NAME"
@@ -60,8 +60,9 @@ echo "USER_BRANCH=\"$USER_BRANCH\"" >> "$CONFIG_PATH"
 }
 
 startup_security(){
+
 if [ $# -gt 2 ]; then
-echo "Wrong argument value"
+echo "Wrong argument value!"
 exit 1
 fi
 
@@ -70,8 +71,14 @@ echo "Repository is already initialized!"
 exit 2
 fi
 
+
+if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+show_help
+exit 0
+fi
+
 if [[ ! -f "$CONFIG_PATH" ]]; then
-echo "Config file does not exist"
+echo "Config file does not exist!"
 ask_confirmation
 while [ $? -eq 3 ]; do
 ask_confirmation
@@ -92,5 +99,32 @@ elif [[ -z "$USER_BRANCH" ]]; then
 fi
 
 }
+
+
+show_help(){
+cat << EOF
+USAGE:
+${0##*/} <dir_name> [remote_url]
+${0##*/} -h | --help
+
+DESCRIPTION:
+Initializes a local Git repository with personal configurations 
+and optionally links it to a remote.
+
+ARGUMENTS:
+<dir_name>	the name of the directory which will be created and/or initialised with Git
+[remote_url]	remote repository URL 
+
+MODES:
+0 params	help
+1 params	create folder, git init, create README.md
+2 params	execute initialisation and link remote repository
+
+EXAMPLES:
+${0##*/} embedded_project
+${0##*/} driver_lib git@github.com:username/driver_lib.git
+EOF
+}
+
 
 main "$@"
