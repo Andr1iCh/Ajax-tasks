@@ -13,4 +13,8 @@ Applying clang-format 17 reformatted all 8 source and header files, enforcing Li
 
 Applying clang-format 22 directly after version 17 did not leave the repository clean. It altered line breaks and alignment in 3 source files, adding 7 insertions and 11 deletions to the git statistics.
 
-This shows that even with the exact same .clang-format file, different major versions of the tool interpret wrapping and alignment rules differently. In git, this generates phantom diffs and pollutes commit history.
+Result shows that even with the exact same .clang-format file, different major versions of the tool interpret wrapping and alignment rules differently. In git, this generates phantom diffs and pollutes commit history.
+
+## **Chromium config comparison**
+Comparing the dumped Chromium configurations between clang-format 17 and 22 resulted in 116 diff lines.
+Key changes mainly include converting flat options into nested blocks, finer alignment sub-rules, modern macro support, and renamed legacy keys 
