@@ -621,10 +621,7 @@ struct ext4_err_translation {
 	int errno;
 };
 
-#define EXT4_ERR_TRANSLATE(err)                      \
-	{                                            \
-		.code = EXT4_ERR_##err, .errno = err \
-	}
+#define EXT4_ERR_TRANSLATE(err) { .code = EXT4_ERR_##err, .errno = err }
 
 static struct ext4_err_translation err_translation[] = {
 	EXT4_ERR_TRANSLATE(EIO),       EXT4_ERR_TRANSLATE(ENOMEM),

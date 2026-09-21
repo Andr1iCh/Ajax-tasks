@@ -1609,7 +1609,7 @@ struct ext4_sb_info {
 	struct ext4_super_block
 		*s_es; /* Pointer to the super block in the buffer */
 	/* Array of bh's for the block group descriptors */
-	struct buffer_head *__rcu *s_group_desc;
+	struct buffer_head * __rcu * s_group_desc;
 	unsigned int s_mount_opt;
 	unsigned int s_mount_opt2;
 	unsigned long s_mount_flags;
@@ -1674,7 +1674,7 @@ struct ext4_sb_info {
 #endif
 
 	/* for buddy allocator */
-	struct ext4_group_info **__rcu *s_group_info;
+	struct ext4_group_info * * __rcu * s_group_info;
 	struct inode *s_buddy_cache;
 	spinlock_t s_md_lock;
 	unsigned short *s_mb_offsets;
@@ -1743,7 +1743,7 @@ struct ext4_sb_info {
 	unsigned int s_extent_max_zeroout_kb;
 
 	unsigned int s_log_groups_per_flex;
-	struct flex_groups *__rcu *s_flex_groups;
+	struct flex_groups * __rcu * s_flex_groups;
 	ext4_group_t s_flex_groups_allocated;
 
 	/* workqueue for reserved extent conversions (buffered io) */
