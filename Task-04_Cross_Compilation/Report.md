@@ -170,3 +170,9 @@ The output is identical to the dynamic build (same hostname, kernel and architec
 ## Conclusions
 
 Static linking trades size for independence. The static binary is about 180 times larger than the dynamic one, but it depends only on the kernel and the CPU architecture: it needs no `libc.so.6` or `ld-linux-aarch64.so.1` on the machine where it runs, and it behaves exactly the same. This removes the main risk found in the cross-development tasks, a missing or incompatible glibc on the target system.
+
+# **Final conclusions**
+
+The same source code produced different binaries depending on the target platform and the toolchain, and the binutils tools showed exactly what changed each time. Architecture-specific properties followed the target, while the program's output always agreed with the tools. The main cross-development problems were that a binary is tied to its architecture, that a dynamically linked program needs a compatible glibc and loader on the target, and that the cross and native toolchains produced slightly different binaries from identical code. This is why the build scripts had to be adapted to each environment, and flags like `-mcpu=cortex-a76` also tie the binary to specific CPU cores.
+
+Static linking removed the dependency on the target's libraries, at the cost of a much larger file (~180×) and weaker ASLR. In practice, it is best to build natively on the target when possible, cross-compile with explicit flags when not, and use static linking when the target's libraries are unknown.
