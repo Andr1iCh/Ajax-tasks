@@ -76,3 +76,49 @@ The binary was built on HOST, copied to TARGET (Raspberry Pi 5, BCM2712 / Cortex
 ## Conclusions
 
 The program built for TARGET runs correctly and its output agrees with the tools: `Hardware: aarch64` matches `Machine: AArch64`, and `OS: Linux` with the kernel `rpi-2712` describes the actual board. Generic ELF properties are the same as on HOST, while architecture-specific ones (machine type, entry point, loader path, libc location) differ, and code size is nearly identical. The optimization flags change little for such a small program.
+
+# Task 4 – Native Build on TARGET: Comparison Report
+
+For this step it was necessary to create a new, modified universal build script, `build_universal_host.sh`, which replaces the separate HOST and cross-compile scripts. 
+
+## Program output
+
+```
+========================================
+ Hostname:  arpinet
+ Time:      2026-09-28 22:50:44
+ OS:        Linux 6.18.50+rpt-rpi-2712
+ Hardware:  aarch64
+========================================
+```
+
+The output matches Task 3 apart from the time: same hostname, kernel and architecture.
+
+## Binutils comparison
+
+| Tool / field | Task 3: cross-built on HOST | Task 4: native on TARGET |
+|---|---|---|
+| `readelf -h` Machine | AArch64 | AArch64 |
+| Class / Data / OS-ABI / Type | ELF64 / little endian / System V / DYN (PIE) | same |
+| Entry point | `0xcc0` | `0xbc0` |
+| Program / section headers | 10 / 29 | 10 / 29 |
+| Section headers offset | 69152 | 69104 |
+| `NEEDED` | `libc.so.6`, `ld-linux-aarch64.so.1` | `libc.so.6` |
+| Interpreter (`ldd`) | `/lib/ld-linux-aarch64.so.1` | `/lib/ld-linux-aarch64.so.1` |
+| libc path | `/lib/aarch64-linux-gnu/libc.so.6` | `/lib/aarch64-linux-gnu/libc.so.6` |
+| `size` text | 3558 | 3295 (−263) |
+| `size` data | 760 | 712 (−48) |
+| `size` bss | 8 | 8 |
+| `size` total | 4326 (0x10e6) | 4015 (0xfaf), −311 |
+| `strings` | 4 labels | same 4 labels |
+
+## Explaining the differences
+
+- **Identical properties:** architecture, ELF class, ABI, PIE, header counts, interpreter and libc location are the same. Both binaries target the same platform, so nothing about the runtime environment changed.
+- **`NEEDED`:** the extra `ld-linux-aarch64.so.1` from the cross build is gone. Both builds use the same source, so the difference comes from the toolchain: the native gcc/binutils on TARGET and the cross toolchain on HOST are different packages and possibly different versions, with different linker defaults. This supports the earlier assumption that the extra entry was a linker artifact and not a real dependency.
+- **Smaller text (−263 B) and data (−48 B):** the code is the same, so the difference most likely comes from the different compiler and linker versions and from the flags used in `build_universal_host.sh` (`-O2` and `-mcpu=cortex-a76` were set explicitly in Task 3). The size change is small (under 8%) and has no functional effect.
+- **Entry point and header offset:** these shift slightly (`0xcc0` → `0xbc0`, 69152 → 69104) because the section layout changed with the code size. The file remains about 70 KB, which is consistent with the 64 KB segment alignment on AArch64 seen in Task 3.
+
+## Conclusions
+
+Building natively on TARGET produces a working binary with the same platform-level properties as the cross-compiled one: the architecture, loader and libc dependency are identical, and the program output reports the same hardware and kernel. The only visible differences are a cleaner dependency list (just `libc.so.6`) and a slightly smaller code size, both caused by the different toolchain rather than by the source or the target.
