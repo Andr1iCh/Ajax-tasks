@@ -122,3 +122,51 @@ The output matches Task 3 apart from the time: same hostname, kernel and archite
 ## Conclusions
 
 Building natively on TARGET produces a working binary with the same platform-level properties as the cross-compiled one: the architecture, loader and libc dependency are identical, and the program output reports the same hardware and kernel. The only visible differences are a cleaner dependency list (just `libc.so.6`) and a slightly smaller code size, both caused by the different toolchain rather than by the source or the target.
+
+# Task 5 – Static Linking (`-static`): Comparison Report
+
+The build script from Task 3 was copied and modified to link the application statically (`-static`). The binary `app_static_target` was built and analysed on TARGET and is compared with the dynamically linked native TARGET build from Task 4.
+
+## Program output
+
+```
+========================================
+ Hostname:  arpinet
+ Time:      2026-09-28 23:22:25
+ OS:        Linux 6.18.50+rpt-rpi-2712
+ Hardware:  aarch64
+========================================
+```
+
+The output is identical to the dynamic build (same hostname, kernel and architecture), so static linking does not change the program's behaviour.
+
+## Binutils comparison
+
+| Tool / field | Task 4: dynamic (native TARGET) | Task 5: static (`-static`) |
+|---|---|---|
+| `readelf -h` Machine | AArch64 | AArch64 |
+| Type | DYN (PIE) | EXEC (fixed address) |
+| OS/ABI | UNIX – System V | UNIX – GNU |
+| Entry point | `0xbc0` | `0x4009c0` |
+| Program / section headers | 10 / 29 | 7 / 25 |
+| Section headers offset | 69104 | 848008 |
+| `NEEDED` | `libc.so.6` | none (no dynamic section) |
+| `ldd` | vdso, `libc.so.6`, loader | `not a dynamic executable` |
+| `size` text | 3295 | 676853 |
+| `size` data | 712 | 23372 |
+| `size` bss | 8 | 22096 |
+| `size` total | 4015 (0xfaf) | 722321 (0xb0591) |
+| `strings` | 4 labels | same 4 labels |
+
+## Explaining the differences
+
+- **Size (~180× larger):** the static binary contains the parts of glibc that the program uses (stdio, time and locale handling, startup code, memory management) instead of loading them from `libc.so.6` at run time. `text` grows from about 3 KB to about 660 KB, and the file is roughly 830 KB (section headers at offset 848008 plus 25 × 64 bytes).
+- **Data and bss:** the larger `data` (23 KB) and `bss` (22 KB) hold glibc's own tables and internal state (locale, I/O, allocator, startup structures), which previously lived in the shared library.
+- **No dynamic linking:** there is no interpreter, no `.dynamic` section and no `NEEDED` entries, which is why `readelf -d` shows nothing and `ldd` reports `not a dynamic executable`. The program headers drop from 10 to 7 because the interpreter and dynamic segments are gone.
+- **EXEC instead of PIE:** a plain `-static` build produces a non-relocatable executable loaded at a fixed address (entry `0x4009c0`, i.e. near `0x400000`) instead of a position-independent one. The binary's own address is therefore not randomized by ASLR.
+- **OS/ABI GNU:** static glibc uses GNU-specific features (such as IFUNC, used to select optimized routines like `memcpy` at start-up), and the linker marks the file as UNIX – GNU instead of System V.
+- **`strings`:** the four format strings are the same in both builds, because they come from the program's own source.
+
+## Conclusions
+
+Static linking trades size for independence. The static binary is about 180 times larger than the dynamic one, but it depends only on the kernel and the CPU architecture: it needs no `libc.so.6` or `ld-linux-aarch64.so.1` on the machine where it runs, and it behaves exactly the same. This removes the main risk found in the cross-development tasks, a missing or incompatible glibc on the target system.
