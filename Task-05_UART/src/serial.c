@@ -11,7 +11,18 @@ int serial_open(const char *path)
         return -1;
     }
 
+    //Configs for UART
+    
     struct termios settings;
+
+    settings.c_cflag &= ~CSIZE;
+    settings.c_cflag |= CS8;
+
+    settings.c_cflag &= ~PARENB;
+    settings.c_cflag &= ~CSTOPB;
+
+    settings.c_cflag |= CREAD | CLOCAL;
+
     if (tcgetattr(fd, &settings) == -1) {
         int error = errno;
         close(fd);
