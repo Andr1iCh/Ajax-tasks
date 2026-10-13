@@ -2,6 +2,7 @@ CROSS_COMPILE ?=
 CC = $(CROSS_COMPILE)gcc
 CFLAGS ?= -std=c11 -Wall -Wextra -O2
 DEPFLAGS = -MMD -MP
+CPPFLAGS += -Iinc
 
 BUILD_DIR := build
 BIN_DIR := bin
@@ -22,7 +23,7 @@ $(TARGET): $(OBJS)
 
 $(BUILD_DIR)/%.o: src/%.c
 	mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(BIN_DIR) $(BUILD_DIR)
