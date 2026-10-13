@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 
   while (!stop_requested) {
     unsigned char byte;
-    ssize_t count = serial_read_byte(port_fd, &byte);
+    ssize_t count = serial_read_byte(port_fd, &byte, &stop_requested);
 
     if (stop_requested) {
       break;
@@ -95,8 +95,14 @@ int main(int argc, char *argv[]) {
         }
         line_swap_case(&line);
 
-        if (serial_write_all(port_fd, line.data, line.length) == -1 ||
-            serial_write_all(port_fd, (const unsigned char *)"\r\n", 2) == -1) {
+        if (serial_write_all(port_fd, line.data, line.length,
+                             &stop_requested) == -1 ||
+            serial_write_all(port_fd, (const unsigned char *)"\r\n", 2,
+                             &stop_requested) == -1) {
+          if (stop_requested) {
+            break;
+          }
+
           int saved_errno = errno;
           log_error(log_file, "write serial port", saved_errno);
           exit_code = 1;
