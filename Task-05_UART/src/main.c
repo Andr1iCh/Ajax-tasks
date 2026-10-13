@@ -28,9 +28,11 @@ int main(int argc, char *argv[])
             LineResult state = line_feed(&line, byte);
 
             if (state == LINE_READY) {
-                printf("Complete line (%zu bytes): ", line.length);
+                line_swap_case(&line);
+                printf("Converted line (%zu bytes): ", line.length);
                 fwrite(line.data, 1, line.length, stdout);
                 putchar('\n');
+
                 line_reset(&line);
             } else if (state == LINE_TOO_LONG) {
                 fprintf(stderr, "Input line is too long\n");

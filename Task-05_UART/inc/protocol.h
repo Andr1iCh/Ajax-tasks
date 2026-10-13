@@ -18,5 +18,6 @@ typedef enum {
 
 LineResult line_feed(LineBuffer *line, unsigned char byte);
 void line_reset(LineBuffer *line);
+void line_swap_case(LineBuffer *line);
 
 #endif
