@@ -6,6 +6,7 @@
 #include <time.h>
 
 static FILE *open_log_file(void);
+static int log_received(FILE *log_file, const LineBuffer *line);
 
 int main(int argc, char *argv[])
 {
@@ -38,6 +39,10 @@ int main(int argc, char *argv[])
             LineResult state = line_feed(&line, byte);
 
             if (state == LINE_READY) {
+                if (log_received(log_file, &line) == -1) {
+                    exit_code = 1;
+                    break;
+                }
                 line_swap_case(&line);
 
                 if (serial_write_all(port_fd, line.data, line.length) == -1 ||
@@ -115,4 +120,36 @@ static FILE *open_log_file(void)
 
     printf("Log file: %s\n", log_path);
     return log_file;
+}
+
+static int log_received(FILE *log_file, const LineBuffer *line)
+{
+    time_t received_at = time(NULL);
+    if (received_at == (time_t)-1) {
+        fprintf(stderr, "Cannot get message time\n");
+        return -1;
+    }
+
+    struct tm *received_tm = localtime(&received_at);
+    if (received_tm == NULL) {
+        fprintf(stderr, "Cannot convert message time\n");
+        return -1;
+    }
+
+    char timestamp[32];
+    if (strftime(timestamp, sizeof(timestamp),
+                 "%Y-%m-%d %H:%M:%S", received_tm) == 0) {
+        fprintf(stderr, "Cannot format message timestamp\n");
+        return -1;
+    }
+
+    if (fprintf(log_file, "[%s] RX: ", timestamp) < 0 ||
+        fwrite(line->data, 1, line->length, log_file) != line->length ||
+        fputc('\n', log_file) == EOF ||
+        fflush(log_file) == EOF) {
+        perror("write received message to log");
+        return -1;
+    }
+
+    return 0;
 }
