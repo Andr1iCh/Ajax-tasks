@@ -1,27 +1,43 @@
 #include <stdio.h>
 #include "serial.h"
+#include "protocol.h"
 
-int main (int argc, char *argv[]){
-    if(argc!=2){
-        fprintf(stderr,"Usage: %s <serial-device>\n", argv[0]);
+int main(int argc, char *argv[])
+{
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <serial-device>\n", argv[0]);
         return 2;
     }
 
     int port_fd = serial_open(argv[1]);
-    if(port_fd == -1){
+    if (port_fd == -1) {
         perror(argv[1]);
         return 1;
     }
 
     printf("Opened %s (fd=%d)\n", argv[1], port_fd);
-    
+
+    LineBuffer line = {0};
+    int exit_code = 0;
 
     for (;;) {
         unsigned char byte;
         ssize_t count = serial_read_byte(port_fd, &byte);
 
         if (count == 1) {
-            printf("Received byte: 0x%02X\n", (unsigned int)byte);
+            LineResult state = line_feed(&line, byte);
+
+            if (state == LINE_READY) {
+                printf("Complete line (%zu bytes): ", line.length);
+                fwrite(line.data, 1, line.length, stdout);
+                putchar('\n');
+                line_reset(&line);
+            } else if (state == LINE_TOO_LONG) {
+                fprintf(stderr, "Input line is too long\n");
+                exit_code = 1;
+                break;
+            }
+
             continue;
         }
 
@@ -31,13 +47,14 @@ int main (int argc, char *argv[]){
             perror("read serial port");
         }
 
+        exit_code = 1;
         break;
     }
 
     if (serial_close(port_fd) == -1) {
-    perror("close serial port");
-    return 1;
+        perror("close serial port");
+        return 1;
     }
-    
-    return 0;
+
+    return exit_code;
 }
