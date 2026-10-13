@@ -6,3 +6,4 @@ Task-05_UART/local.mk
 Task-05_UART/build/
 Task-05_UART/bin/
 Task-05_UART/.clangd
+Task-05_UART/logs/

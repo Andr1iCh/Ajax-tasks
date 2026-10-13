@@ -1,12 +1,22 @@
 #include <stdio.h>
 #include "serial.h"
 #include "protocol.h"
+#include <errno.h>
+#include <sys/stat.h>
+#include <time.h>
+
+static FILE *open_log_file(void);
 
 int main(int argc, char *argv[])
 {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <serial-device>\n", argv[0]);
         return 2;
+    }
+
+    FILE *log_file = open_log_file();
+    if (log_file == NULL) {
+        return 1;
     }
 
     int port_fd = serial_open(argv[1]);
@@ -68,4 +78,41 @@ int main(int argc, char *argv[])
     }
 
     return exit_code;
+}
+
+static FILE *open_log_file(void)
+{
+    if (mkdir("logs", 0755) == -1 && errno != EEXIST) {
+        perror("create logs directory");
+        return NULL;
+    }
+
+    time_t started_at = time(NULL);
+    if (started_at == (time_t)-1) {
+        fprintf(stderr, "Cannot get start time\n");
+        return NULL;
+    }
+
+    struct tm *started_tm = localtime(&started_at);
+    if (started_tm == NULL) {
+        fprintf(stderr, "Cannot convert start time\n");
+        return NULL;
+    }
+
+    char log_path[64];
+    if (strftime(log_path, sizeof(log_path),
+                 "logs/uart_%Y-%m-%d_%H-%M-%S.log",
+                 started_tm) == 0) {
+        fprintf(stderr, "Cannot format log filename\n");
+        return NULL;
+    }
+
+    FILE *log_file = fopen(log_path, "a");
+    if (log_file == NULL) {
+        perror(log_path);
+        return NULL;
+    }
+
+    printf("Log file: %s\n", log_path);
+    return log_file;
 }
