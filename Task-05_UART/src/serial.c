@@ -19,6 +19,17 @@ int serial_open(const char *path)
         return -1;
     }
 
+    if (cfsetispeed(&settings, B115200) == -1) {
+    return -1;
+    }
+
+    if (cfsetospeed(&settings, B115200) == -1) {
+        return -1;
+    }
+
+    if (tcsetattr(fd, TCSANOW, &settings) == -1) {
+        return -1;
+    }
     return fd;
 }
 
