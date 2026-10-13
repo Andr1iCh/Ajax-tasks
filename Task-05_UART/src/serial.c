@@ -12,7 +12,7 @@ int serial_open(const char *path)
     }
 
     //Configs for UART
-    
+
     struct termios settings;
 
     settings.c_cflag &= ~CSIZE;
@@ -22,6 +22,14 @@ int serial_open(const char *path)
     settings.c_cflag &= ~CSTOPB;
 
     settings.c_cflag |= CREAD | CLOCAL;
+
+    settings.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP |
+                      INLCR | IGNCR | ICRNL | IXON | IXOFF | IXANY);
+    settings.c_oflag &= ~OPOST;
+    settings.c_lflag &= ~(ICANON | ECHO | ECHONL | ISIG | IEXTEN);
+
+    settings.c_cc[VMIN] = 1;
+    settings.c_cc[VTIME] = 0;
 
     if (tcgetattr(fd, &settings) == -1) {
         int error = errno;
