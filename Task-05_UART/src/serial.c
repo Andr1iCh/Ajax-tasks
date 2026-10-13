@@ -1,4 +1,4 @@
-
+#define _DEFAULT_SOURCE
 
 #include "serial.h"
 #include <errno.h>
@@ -31,6 +31,7 @@ int serial_open(const char *path) {
   settings.c_cflag &= ~CSTOPB;
 
   settings.c_cflag |= CREAD | CLOCAL;
+  settings.c_cflag &= ~CRTSCTS;
 
   settings.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR |
                         ICRNL | IXON | IXOFF | IXANY);
@@ -40,15 +41,12 @@ int serial_open(const char *path) {
   settings.c_cc[VMIN] = 1;
   settings.c_cc[VTIME] = 0;
 
-  if (cfsetispeed(&settings, B115200) == -1) {
-    return -1;
-  }
-
-  if (cfsetospeed(&settings, B115200) == -1) {
-    return -1;
-  }
-
-  if (tcsetattr(fd, TCSANOW, &settings) == -1) {
+  if (cfsetispeed(&settings, B115200) == -1 ||
+      cfsetospeed(&settings, B115200) == -1 ||
+      tcsetattr(fd, TCSANOW, &settings) == -1) {
+    int saved_errno = errno;
+    close(fd);
+    errno = saved_errno;
     return -1;
   }
   return fd;
