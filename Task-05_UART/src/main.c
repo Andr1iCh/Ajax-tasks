@@ -16,21 +16,23 @@ int main (int argc, char *argv[]){
     printf("Opened %s (fd=%d)\n", argv[1], port_fd);
     
 
-    unsigned char byte;
-    ssize_t count = serial_read_byte(port_fd, &byte);
+    for (;;) {
+        unsigned char byte;
+        ssize_t count = serial_read_byte(port_fd, &byte);
 
-    if (count != 1) {
-        if (count == -1) {
-            perror("read serial port");
-        } else {
-            fprintf(stderr, "Serial port closed while reading\n");
+        if (count == 1) {
+            printf("Received byte: 0x%02X\n", (unsigned int)byte);
+            continue;
         }
 
-        serial_close(port_fd);
-        return 1;
-    }
+        if (count == 0) {
+            fprintf(stderr, "Serial port closed while reading\n");
+        } else {
+            perror("read serial port");
+        }
 
-    printf("Received byte: 0x%02X\n", (unsigned int)byte);
+        break;
+    }
 
     if (serial_close(port_fd) == -1) {
     perror("close serial port");
