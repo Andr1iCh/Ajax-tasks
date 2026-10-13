@@ -29,7 +29,16 @@ int main(int argc, char *argv[])
 
             if (state == LINE_READY) {
                 line_swap_case(&line);
-                printf("Converted line (%zu bytes): ", line.length);
+
+                if (serial_write_all(port_fd, line.data, line.length) == -1 ||
+                    serial_write_all(port_fd,
+                                    (const unsigned char *)"\r\n", 2) == -1) {
+                    perror("write serial port");
+                    exit_code = 1;
+                    break;
+                }
+
+                printf("Sent response (%zu bytes): ", line.length);
                 fwrite(line.data, 1, line.length, stdout);
                 putchar('\n');
 

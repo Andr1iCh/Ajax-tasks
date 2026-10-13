@@ -21,7 +21,7 @@ int serial_open(const char *path)
         errno = error;
         return -1;
     }
-    
+
     settings.c_cflag &= ~CSIZE;
     settings.c_cflag |= CS8;
 
@@ -61,4 +61,26 @@ int serial_close(int fd)
 ssize_t serial_read_byte(int fd, unsigned char *byte)
 {
     return read(fd, byte, 1);
+}
+
+int serial_write_all(int fd, const unsigned char *data, size_t length)
+{
+    size_t sent = 0;
+
+    while (sent < length) {
+        ssize_t count = write(fd, data + sent, length - sent);
+
+        if (count > 0) {
+            sent += (size_t)count;
+        } else if (count == -1 && errno == EINTR) {
+            continue;
+        } else {
+            if (count == 0) {
+                errno = EIO;
+            }
+            return -1;
+        }
+    }
+
+    return 0;
 }
