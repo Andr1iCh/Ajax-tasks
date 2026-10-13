@@ -4,9 +4,11 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <string.h>
 
 static FILE *open_log_file(void);
 static int log_received(FILE *log_file, const LineBuffer *line);
+static void log_error(FILE *log_file, const char *message, int error_code);
 
 int main(int argc, char *argv[])
 {
@@ -22,8 +24,14 @@ int main(int argc, char *argv[])
 
     int port_fd = serial_open(argv[1]);
     if (port_fd == -1) {
-        perror(argv[1]);
-        return 1;
+    int saved_errno = errno;
+    log_error(log_file, argv[1], saved_errno);
+
+    if (fclose(log_file) == EOF) {
+        perror("close log file");
+    }
+
+    return 1;
     }
 
     printf("Opened %s (fd=%d)\n", argv[1], port_fd);
@@ -46,11 +54,12 @@ int main(int argc, char *argv[])
                 line_swap_case(&line);
 
                 if (serial_write_all(port_fd, line.data, line.length) == -1 ||
-                    serial_write_all(port_fd,
-                                    (const unsigned char *)"\r\n", 2) == -1) {
-                    perror("write serial port");
-                    exit_code = 1;
-                    break;
+                serial_write_all(port_fd,
+                                (const unsigned char *)"\r\n", 2) == -1) {
+                int saved_errno = errno;
+                log_error(log_file, "write serial port", saved_errno);
+                exit_code = 1;
+                break;
                 }
 
                 printf("Sent response (%zu bytes): ", line.length);
@@ -59,7 +68,7 @@ int main(int argc, char *argv[])
 
                 line_reset(&line);
             } else if (state == LINE_TOO_LONG) {
-                fprintf(stderr, "Input line is too long\n");
+                log_error(log_file, "Input line is too long", 0);
                 exit_code = 1;
                 break;
             }
@@ -68,9 +77,10 @@ int main(int argc, char *argv[])
         }
 
         if (count == 0) {
-            fprintf(stderr, "Serial port closed while reading\n");
+            log_error(log_file, "Serial port closed while reading", 0);
         } else {
-            perror("read serial port");
+            int saved_errno = errno;
+            log_error(log_file, "read serial port", saved_errno);
         }
 
         exit_code = 1;
@@ -78,8 +88,14 @@ int main(int argc, char *argv[])
     }
 
     if (serial_close(port_fd) == -1) {
-        perror("close serial port");
-        return 1;
+    int saved_errno = errno;
+    log_error(log_file, "close serial port", saved_errno);
+    exit_code = 1;
+    }
+
+    if (fclose(log_file) == EOF) {
+        perror("close log file");
+        exit_code = 1;
     }
 
     return exit_code;
@@ -152,4 +168,38 @@ static int log_received(FILE *log_file, const LineBuffer *line)
     }
 
     return 0;
+}
+
+static void log_error(FILE *log_file, const char *message, int error_code)
+{
+    char timestamp[32] = "unknown time";
+
+    time_t now = time(NULL);
+    if (now != (time_t)-1) {
+        struct tm *local = localtime(&now);
+        if (local != NULL) {
+            if (strftime(timestamp, sizeof(timestamp),
+                         "%Y-%m-%d %H:%M:%S", local) == 0) {
+                strcpy(timestamp, "unknown time");
+            }
+        }
+    }
+
+    const char *details = error_code != 0 ? strerror(error_code) : NULL;
+
+    int result;
+
+    if (details != NULL) {
+        fprintf(stderr, "%s: %s\n", message, details);
+        result = fprintf(log_file, "[%s] ERROR: %s: %s\n",
+                         timestamp, message, details);
+    } else {
+        fprintf(stderr, "%s\n", message);
+        result = fprintf(log_file, "[%s] ERROR: %s\n",
+                         timestamp, message);
+    }
+
+    if (result < 0 || fflush(log_file) == EOF) {
+        fprintf(stderr, "Cannot write error to log\n");
+    }
 }
