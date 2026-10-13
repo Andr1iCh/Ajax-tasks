@@ -15,6 +15,13 @@ int serial_open(const char *path)
 
     struct termios settings;
 
+     if (tcgetattr(fd, &settings) == -1) {
+        int error = errno;
+        close(fd);
+        errno = error;
+        return -1;
+    }
+    
     settings.c_cflag &= ~CSIZE;
     settings.c_cflag |= CS8;
 
@@ -31,12 +38,6 @@ int serial_open(const char *path)
     settings.c_cc[VMIN] = 1;
     settings.c_cc[VTIME] = 0;
 
-    if (tcgetattr(fd, &settings) == -1) {
-        int error = errno;
-        close(fd);
-        errno = error;
-        return -1;
-    }
 
     if (cfsetispeed(&settings, B115200) == -1) {
     return -1;
@@ -55,4 +56,9 @@ int serial_open(const char *path)
 int serial_close(int fd)
 {
     return close(fd);
+}
+
+ssize_t serial_read_byte(int fd, unsigned char *byte)
+{
+    return read(fd, byte, 1);
 }
