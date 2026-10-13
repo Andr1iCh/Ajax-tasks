@@ -1,4 +1,8 @@
 Task1/
+Task-04_Cross_Compilation/app_host
+Task-04_Cross_Compilation/app_static_target
+Task-04_Cross_Compilation/app_target
 Task-05_UART/local.mk
 Task-05_UART/build/
 Task-05_UART/bin/
+Task-05_UART/.clangd
