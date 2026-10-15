@@ -131,9 +131,10 @@ Additional checks used a POSIX pseudo-terminal (PTY):
 All 13 checks passed. PTY tests verify application behavior and `termios`
 settings; they do not measure physical UART voltage or wire-level baud rate.
 
+<img width="1776" height="217" alt="image" src="https://github.com/user-attachments/assets/dd9e26e4-b7d7-4cf4-85b1-63579fdfb231" />
+The image shows the application running on the HOST and TARGET: the entered text hello google COM is returned as HELLO GOOGLEcom, confirming correct letter-case inversion.  
 ## Limitations and task status
 
-- Independent HOST-TARGET UART exchange was not verified because the USB-UART adapter was faulty.
 - Exact UART boot-configuration commands and a terminal-program loopback transcript were not supplied.
 - Payloads are limited to 255 bytes; case conversion applies to ASCII letters only.
 - Timestamps have one-second resolution; launches within the same second append to the same log file.
