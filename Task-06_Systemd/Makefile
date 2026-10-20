@@ -17,7 +17,7 @@ DEPS := $(OBJS:.o=.d)
 
 TARGET := $(BIN_DIR)/echo_app
 
-.PHONY: all clean help deploy install 
+.PHONY: all clean help deploy install uninstall
 
 all: $(TARGET)
 
@@ -46,6 +46,16 @@ install: $(TARGET) uart-echo.service
 		sudo systemctl daemon-reload && \
 		sudo systemctl enable uart-echo.service"
 
+uninstall:
+	ssh -t "$(TARGET_USER)@$(TARGET_HOST)" "\
+		sudo systemctl disable --now uart-echo.service && \
+		sudo rm -f '$(INSTALL_BIN_DIR)/echo_app' \
+		    /etc/systemd/system/uart-echo.service \
+		    /etc/uart-echo.conf && \
+		rm -f '$(DEPLOY_DIR)/echo_app' \
+		    '$(DEPLOY_DIR)/uart-echo.service' && \
+		sudo systemctl daemon-reload"
+		
 help:
 	@echo "make [CROSS_COMPILE=...]"
 	@echo "make deploy - requires local.mk (see README.md)"
