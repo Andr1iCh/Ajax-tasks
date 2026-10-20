@@ -7,3 +7,8 @@ Task-05_UART/build/
 Task-05_UART/bin/
 Task-05_UART/.clangd
 Task-05_UART/logs/
+Task-06_Systemd/local.mk
+Task-06_Systemd/build/
+Task-06_Systemd/bin/
+Task-06_Systemd/.clangd
+Task-06_Systemd/logs/
