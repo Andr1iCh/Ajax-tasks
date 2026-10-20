@@ -1,0 +1,18 @@
+[Unit]
+Description=UART ECHO application
+After=sysinit.target
+
+[Service]
+Type=simple
+User=arpi
+SupplementaryGroups=dialout
+WorkingDirectory=~
+EnvironmentFile=/etc/uart-echo.conf
+ExecStart=/usr/local/bin/echo_app ${UART_DEVICE}
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
